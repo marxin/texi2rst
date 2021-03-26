@@ -1216,7 +1216,8 @@ class TableLayout:
             for idx in range(self.num_columns):
                 column = []
                 for row in comp.rows:
-                    column.append(row.entries[idx])
+                    if idx < len(row.entries):
+                        column.append(row.entries[idx])
                 if debug:
                     print('column: %r' % (column, ))
                 comp.columns.append(column)
