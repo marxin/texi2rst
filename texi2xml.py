@@ -829,7 +829,7 @@ class Parser:
         <iftex> entirely, and eliminate e.g. <ifnottex>
         """
         class ConditionalFixer(NoopVisitor):
-            def previsit_element(self, element):
+            def previsit_element(self, element, parent):
                 new_children = []
                 for child in element.children:
                     if child.is_element('iftex'):

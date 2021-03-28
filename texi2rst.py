@@ -113,7 +113,7 @@ def fixup_whitespace(tree):
         """
         Strip redundant Text nodes
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'pre':
                 return
 
@@ -153,7 +153,7 @@ def convert_comments(tree):
 
 def combine_commments(tree):
     class CommentCombiner(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             # Attempt to merge
             #   COMMENT(x) COMMENT(y)
             # into
@@ -180,7 +180,7 @@ def fixup_comments(tree):
 
 def prune(tree):
     class Pruner(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             new_children = []
             for child in element.children:
                 if self.should_strip(child):
@@ -230,7 +230,7 @@ def fixup_menus(tree):
         be rendered using the given descriptions.
     """
     class MenuFixer(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'menu':
                 element.rst_kind = Directive('toctree', None)
 
@@ -259,7 +259,7 @@ def split(tree):
         def __init__(self):
             self.split_kinds = ('chapter', 'section', )
 
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind in self.split_kinds:
                 sectiontitle = element.first_element_named('sectiontitle')
                 if sectiontitle:
@@ -273,7 +273,7 @@ def split(tree):
         """
         Add toctree directives referencing the split content
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             new_children = []
             toctree = None
             for child in element.children:
@@ -362,7 +362,7 @@ def fixup_nodes(tree, ctxt):
         ...content...
     """
     class NodeFixer(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'node':
                 nodename = element.first_element_named('nodename')
                 text = nodename.get_sole_text()
@@ -425,12 +425,20 @@ def fixup_option_refs(tree):
         # have a leading dash.
         # Conditionally retain options (or else they will be
         # stripped at output)
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'option':
                 firstchild = element.children[0]
                 if isinstance(firstchild, Text):
+                    i = parent.children.index(element)
                     if firstchild.data.startswith('-'):
                         element.rst_kind = InlineMarkup('option')
+                        if firstchild.data.endswith('='):
+                            firstchild.data = firstchild.data[:-1]
+                            parent.children.insert(i + 1, Text(' = '))
+
+                    # move all inner elements out of the option node
+                    parent.children = parent.children[:i + 2] + element.children[1:] + parent.children[i + 2:]
+                    element.children = element.children[:1]
 
     v = OptionRefFixer()
     v.visit(tree)
@@ -482,7 +490,7 @@ def fixup_table_entry(tree):
     Transform this to a definition list.
     """
     class TableEntryFixer(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             # Convert:
             #   <itemformat command="COMMAND">TEXT</itemformat>
             # into:
@@ -702,12 +710,12 @@ def fixup_multitables(tree, ctxt):
     convert to a .rst table
     """
     class MultitableFixer(NoopVisitor):
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'multitable':
                 element.rst_kind = Table(element, ctxt)
             element.delete_children_named('columnprototypes')
 
-        def postvisit_element(self, element):
+        def postvisit_element(self, element, parent):
             if ctxt.debug:
                 if element.kind == 'multitable':
                     element.dump(sys.stdout)
@@ -740,7 +748,7 @@ def fixup_examples(tree):
         def __init__(self):
             self.default_lang_stack = ['c++']
 
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if hasattr(element, 'default_language'):
                 self.default_lang_stack.append(element.default_language)
 
@@ -760,7 +768,7 @@ def fixup_examples(tree):
                         lang = self.guess_language(text.data)
                         example.rst_kind = Directive('code-block', lang)
 
-        def postvisit_element(self, element):
+        def postvisit_element(self, element, parent):
             if hasattr(element, 'default_language'):
                 self.default_lang_stack.pop()
 
@@ -775,7 +783,7 @@ def fixup_examples(tree):
 
         def handle_option_listing(self, element, pre):
             class OptionWrappingVisitor(NoopVisitor):
-                def postvisit_element(self, element):
+                def postvisit_element(self, element, parent):
                     new_children = []
                     for child in element.children:
                         if isinstance(child, Text):
@@ -817,7 +825,7 @@ def fixup_titles(tree):
                 'unnumbered'    : '=',
                 'unnumberedsec' : '='}
 
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind in self.section_kinds:
                 self.cur_section_level = element.kind
 
@@ -840,7 +848,7 @@ def fixup_index(tree):
         """
         Look for <cindex><indexterm>TEXT</indexterm></cindex>
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if isinstance(element, Element):
                 if element.kind == 'indexterm':
                     text = element.get_all_text()
@@ -868,7 +876,7 @@ def fixup_xrefs(tree):
         (see http://sphinx-doc.org/markup/inline.html#role-ref)
         Note that the XML already contains a trailing period.
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind in ('xref', 'pxref'):
                 xrefnodename = element.first_element_named('xrefnodename')
                 xrefprinteddesc = element.first_element_named('xrefprinteddesc')
@@ -909,7 +917,7 @@ def fixup_lists(tree):
              ...ELEMENTS...
           </listitem>
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'listitem':
                 new_children = []
                 element.rst_kind = ListItem('*')
@@ -947,7 +955,7 @@ def fixup_inline_markup(tree):
         <samp>TEXT</samp>          :samp:`TEXT`
         =========================  ==================
         """
-        def previsit_element(self, element):
+        def previsit_element(self, element, parent):
             if element.kind == 'command':
                 element.rst_kind = InlineMarkup('command')
             elif element.kind == 'var':
@@ -1406,14 +1414,14 @@ class RstWriter(Visitor):
         self.curline = ''
         return True
 
-    def previsit_element(self, element):
+    def previsit_element(self, element, parent):
         if element.rst_kind:
             return element.rst_kind.before(self)
         else:
             if 0:
                 print('unhandled element: %r' % (element, ))
 
-    def postvisit_element(self, element):
+    def postvisit_element(self, element, parent):
         if element.rst_kind:
             element.rst_kind.after(self)
         if element.kind == 'para':
@@ -1666,10 +1674,24 @@ class OptionTests(Texi2RstTests):
         out = self.make_rst_string(doc)
         self.assertEqual(u':option:`--some-opt`', out)
 
+    def test_option_ref_with_var(self):
+        xml_src = '<para>This is similar to how <option>-Walloca-larger-than=</option><var>byte-size</var> works.</para>'
+        doc = from_xml_string(xml_src)
+        doc = convert_to_rst(doc, self.ctxt)
+        out = self.make_rst_string(doc)
+        self.assertEqual('This is similar to how :option:`-Walloca-larger-than` = ``byte-size`` works.\n\n', out)
+
+    def test_option_ref_with_var2(self):
+        xml_src = '<para>See also <option>-Walloca-larger-than=<var>byte-size</var></option>.</para>'
+        doc = from_xml_string(xml_src)
+        doc = convert_to_rst(doc, self.ctxt)
+        out = self.make_rst_string(doc)
+        self.assertEqual('See also :option:`-Walloca-larger-than` = ``byte-size``.\n\n', out)
+
     def test_invalid_option_ref(self):
         xml_src = ('<texinfo><option>some-opt</option></texinfo>')
         doc = from_xml_string(xml_src)
-        doc = fixup_option_refs(doc)
+        doc = convert_to_rst(doc, self.ctxt)
         out = self.make_rst_string(doc)
         self.assertEqual(u'some-opt', out)
 
@@ -2623,7 +2645,7 @@ class FileOpener(RstOpener):
 class GccContext(Context):
     def preprocess(self, tree):
         class GccVisitor(NoopVisitor):
-            def previsit_element(self, element):
+            def previsit_element(self, element, parent):
                 if element.kind == 'chapter':
                     for child in element.children:
                         if child.is_element('sectiontitle'):

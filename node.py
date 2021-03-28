@@ -187,14 +187,14 @@ class Entity(Node):
 # Visitor base class
 
 class Visitor:
-    def visit(self, node):
+    def visit(self, node, parent=None):
         if isinstance(node, Element):
-            early_exit = self.previsit_element(node)
+            early_exit = self.previsit_element(node, parent)
             if early_exit:
                 return
             for child in node.children:
-                self.visit(child)
-            self.postvisit_element(node)
+                self.visit(child, node)
+            self.postvisit_element(node, parent)
         elif isinstance(node, Comment):
             self.visit_comment(node)
         elif isinstance(node, Text):
@@ -204,10 +204,10 @@ class Visitor:
         else:
             raise ValueError('unknown node: %r' % (node, ))
 
-    def previsit_element(self, element):
+    def previsit_element(self, element, parent):
         raise NotImplementedError
 
-    def postvisit_element(self, element):
+    def postvisit_element(self, element, parent):
         raise NotImplementedError
 
     def visit_comment(self, comment):
@@ -220,10 +220,10 @@ class Visitor:
         raise NotImplementedError
 
 class NoopVisitor(Visitor):
-    def previsit_element(self, element):
+    def previsit_element(self, element, parent):
         pass
 
-    def postvisit_element(self, element):
+    def postvisit_element(self, element, parent):
         pass
 
     def visit_comment(self, comment):
