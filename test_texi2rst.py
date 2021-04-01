@@ -157,6 +157,13 @@ class InlineMarkupTests(Texi2RstTests):
         out = self.make_rst_string(doc)
         self.assertEqual(u'Target has the ``_Floatn`` type.\n\n', out)
 
+    def test_code_spacing(self):
+        xml_src = '<para><var>$&lbrace;tool&rbrace;</var><code>-torture-execute</code>, where <var>tool</var> is <code>c</code></para>'
+        doc = from_xml_string(xml_src)
+        doc = convert_to_rst(doc, self.ctxt)
+        out = self.make_rst_string(doc)
+        self.assertEqual(u':samp:`{${tool}}` ``-torture-execute``, where :samp:`{tool}` is ``c``\n\n', out)
+
     def test_dfn(self):
         xml_src = (u'<para>An <dfn>attribute specifier list</dfn> is...</para>')
         doc = from_xml_string(xml_src)
@@ -1309,7 +1316,7 @@ specifies a register constraint, this function will always return
         self.assertEqual(
             '''.. function:: bool constraint_satisfied_p(rtx exp,enum constraint_numc)
 
-  Like the ``satisfies_constraint_ :samp:`{m}``` functions, but the
+  Like the ``satisfies_constraint_m`` functions, but the
   constraint to test is given as an argument, :samp:`{c}`.  If :samp:`{c}`
   specifies a register constraint, this function will always return
   ``false``.
