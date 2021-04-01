@@ -74,6 +74,7 @@ def from_xml_string(xml_src):
     xml_src = xml_src.replace('&dots;', '...')
     xml_src = xml_src.replace('&enddots;', '…')
     xml_src = xml_src.replace('&eosperiod;', '.')
+    xml_src = xml_src.replace('&comma;', ',')
     xml_src = xml_src.replace('&equiv;', '==')
     xml_src = xml_src.replace('&lbrace;', '{')
     xml_src = xml_src.replace('&linebreak;', "\n")
