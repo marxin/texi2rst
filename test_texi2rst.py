@@ -241,6 +241,13 @@ some chapter text
         out = self.make_rst_string(doc)
         self.assertEqual('form :samp:`{n}f2_1`\n\n', out)
 
+    def test_option_with_var_and_space(self):
+        xml_src = '<para>same <option>-G <var>num</var></option> value</para>'
+        doc = from_xml_string(xml_src)
+        doc = convert_to_rst(doc, self.ctxt)
+        out = self.make_rst_string(doc)
+        self.assertEqual('same :option:`-G `:samp:`{num}` value\n\n', out)
+
 class OptionTests(Texi2RstTests):
     def test_valid_option_ref(self):
         xml_src = ('<texinfo><option>--some-opt</option></texinfo>')

@@ -498,12 +498,18 @@ def fixup_element_spacing(tree):
 def fixup_wrapped_options(tree):
     class WrapperOptionFixer(NoopVisitor):
         # Move out all inner elements in option nodes as siblings:
-        # <option>-foo=<var>n</var></option>.
+        # <option>-foo=<var>aaa</var> and <var>n</var></option>.
         def postvisit_element(self, element, parent):
             if element.kind == 'option':
                 i = parent.children.index(element)
-                parent.children = parent.children[:i + 1] + element.children[1:] + parent.children[i + 1:]
-                element.children = element.children[:1]
+                newchildren = []
+                for child in element.children:
+                    if isinstance(child, Element) and child.kind == 'var':
+                        parent.children = parent.children[:i + 1] + [child] + parent.children[i + 1:]
+                        i += 1
+                    else:
+                        newchildren.append(child)
+                element.children = newchildren
 
     v = WrapperOptionFixer()
     v.visit(tree)
