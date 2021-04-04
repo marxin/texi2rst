@@ -525,18 +525,20 @@ def fixup_trailing_sign_for_options(tree):
         def postvisit_element(self, element, parent):
             if element.kind == 'option' and element.children:
                 firstchild = element.children[0]
-                if isinstance(firstchild, Text) and firstchild.data.endswith('='):
-                    firstchild.data = firstchild.data[:-1]
+                if isinstance(firstchild, Text) and '=' in firstchild.data:
+                    pos = firstchild.data.index('=')
+                    ending = Element('samp')
+                    ending.kind = 'samp'
+                    ending.rst_kind = InlineMarkup('samp')
+                    ending.children = [Text(firstchild.data[pos:])]
+                    firstchild.data = firstchild.data[:pos]
                     i = parent.children.index(element)
                     if i + 1 < len(parent.children):
                         sibling = parent.children[i + 1]
-                        if isinstance(sibling, Text):
-                            sibling.data = ' =' + sibling.data
-                        else:
-                            sibling.prepend_text('=')
+                        if isinstance(sibling, Element) and sibling.kind == 'var':
+                            sibling.prepend_text(ending.get_all_text())
                             return
-                    else:
-                        element.children.add(Text('='))
+                    parent.children.insert(i + 1, ending)
 
     v = TrailingSignForOptionFixer()
     v.visit(tree)
