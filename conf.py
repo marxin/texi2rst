@@ -40,7 +40,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'gcc'
+project = 'Using the GNU Compiler Collection'
 copyright = u'2021, Free Software Foundation, Inc.'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -183,8 +183,8 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'gcc.tex', u'gcc Documentation',
-   u'GCC Contributors', 'manual'),
+  ('index', 'gcc.tex', project,
+   u'GCC Developer Community', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
