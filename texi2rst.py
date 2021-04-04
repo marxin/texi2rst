@@ -262,10 +262,11 @@ def split(tree):
             self.split_kinds = ('chapter', 'section', )
 
         def previsit_element(self, element):
-            if element.kind in self.split_kinds:
-                sectiontitle = element.first_element_named('sectiontitle')
-                if sectiontitle:
-                    text = sectiontitle.get_all_text()
+            # split '$target Option' subsections
+            sectiontitle = element.first_element_named('sectiontitle')
+            text = sectiontitle.get_all_text() if sectiontitle else None
+            if element.kind in self.split_kinds or (element.kind == 'subsection' and text.endswith('Options')):
+                if text:
                     text = text.lower()
                     for c in ' /':
                         text = text.replace(c, '-')
