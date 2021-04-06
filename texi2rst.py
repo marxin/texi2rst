@@ -500,6 +500,25 @@ def fixup_element_spacing(tree):
 def fixup_machine_dependant_options(tree):
     class MachineDependantOptionFixer(NoopVisitor):
         def __init__(self):
+            self.in_param_option = False
+
+        def previsit_element(self, element):
+            if element.kind == 'option' and isinstance(element.rst_kind, Directive) and element.rst_kind.name == 'option':
+                if '--param' in element.rst_kind.args:
+                    self.in_param_option = True
+                else:
+                    self.in_param_option = False
+            elif self.in_param_option and element.kind == 'code':
+                element.rst_kind = Directive('option', element.get_all_text())
+                element.children = []
+
+    v = MachineDependantOptionFixer()
+    v.visit(tree)
+    return tree
+
+def fixup_params(tree):
+    class ParamFixer(NoopVisitor):
+        def __init__(self):
             self.parent_seen = False
 
         def postvisit_element(self, element, parent):
@@ -511,7 +530,7 @@ def fixup_machine_dependant_options(tree):
                 elif self.parent_seen:
                     parent.children.insert(parent.children.index(element) - 2, Text('\n'))
 
-    v = MachineDependantOptionFixer()
+    v = ParamFixer()
     v.visit(tree)
     return tree
 
@@ -1179,6 +1198,7 @@ def convert_to_rst(tree, ctxt):
     tree = fixup_trailing_sign_for_options(tree)
     tree = fixup_element_spacing(tree)
     tree = fixup_machine_dependant_options(tree)
+    tree = fixup_params(tree)
     return tree
 
 # Policies for converting elements to rst (element.rst_kind):
