@@ -627,6 +627,9 @@ def fixup_table_entry(tree):
     Transform this to a definition list.
     """
     class TableEntryFixer(NoopVisitor):
+        def __init__(self):
+            self.in_attributes = False
+
         def previsit_element(self, element):
             # Convert:
             #   <itemformat command="COMMAND">TEXT</itemformat>
@@ -763,11 +766,21 @@ def fixup_table_entry(tree):
 
             # Otherwise, if it's all uppercase/underscores, make it
             # an "envvar" directive.
+            if text == 'access':
+                self.in_attributes = True
+            if 'objc_root_class' in text:
+                self.in_attributes = False
+
             if text and len(text) > 3 and re.match('^[A-Z][_A-Z]+$', text):
                 tableentry.rst_kind = Directive('envvar', text)
                 tableentry.children = new_children
                 # The "envvar" directive will add it to the index; strip
                 # any <findex> element below <tableitem>.
+                tableentry.delete_children_named('findex')
+                return True
+            elif self.in_attributes:
+                tableentry.rst_kind = Directive('option', text)
+                tableentry.children = new_children
                 tableentry.delete_children_named('findex')
                 return True
 
@@ -1298,6 +1311,10 @@ class Directive(RstKind):
                     if part:
                         part += ', '
                     part += args[0]
+                    args = args[1:]
+                # handle long options
+                if not part:
+                    part = args[0]
                     args = args[1:]
                 self.write_part(w, part)
         else:
