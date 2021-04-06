@@ -1689,12 +1689,12 @@ class FileOpener(RstOpener):
 
     def open(self, output_file):
         path = os.path.join(self.output_dir, '%s.rst' % output_file.name)
-        print('opening: %s' % path)
+        # print('opening: %s' % path)
         f_out = open(path, 'w')
         return f_out
 
     def close(self, f_out):
-        print('closing')
+        # print('closing')
         f_out.close()
 
 class GccContext(Context):
