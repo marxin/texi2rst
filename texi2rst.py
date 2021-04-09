@@ -18,6 +18,8 @@ TODO:
   map back to the include structure of the underlying .texi files
 """
 
+xml_filename = None
+
 # Convert from XML nodes to our easier-to-work-with data structure
 
 def convert_attrs_from_xml(namednodemap):
@@ -947,6 +949,8 @@ def fixup_examples(tree):
                 self.default_lang_stack.pop()
 
         def guess_language(self, data):
+            if xml_filename and 'gnat-style' in xml_filename:
+                return 'ada'
             if 'DO ' in data:
                 return 'fortran'
             if data.startswith('gcc ') or data.startswith('% gcc '):
@@ -1753,7 +1757,8 @@ if __name__ == '__main__':
         sys.exit(1)
     else:
         base, _ = os.path.splitext(os.path.basename(sys.argv[1]))
-        with open(sys.argv[1]) as f_in:
+        xml_filename = sys.argv[1]
+        with open(xml_filename) as f_in:
             xml_src = f_in.read()
             tree = from_xml_string(xml_src)
         tree = convert_to_rst(tree, GccContext())
